@@ -4,12 +4,13 @@ Server
 import socket
 import threading
 import queue
-import random
-import hashlib
-import datetime
 import asyncio
 import ssl
-import secrets
+
+from random import randint
+from hashlib import sha256
+from datetime import datetime
+from secrets import token_hex
 from re import search, fullmatch, sub
 from sys import argv
 from concurrent.futures import ThreadPoolExecutor
@@ -272,7 +273,7 @@ class Room:
     def draw(self, plr):
         tmp = ""
         for i in range(5):
-            drawnCard = self.deck[random.randint(0, len(self.deck)-1)]
+            drawnCard = self.deck[randint(0, len(self.deck)-1)]
             self.deck.remove(drawnCard)
             tmp += drawnCard+" "
         tmp = tmp[:-1]
@@ -295,7 +296,7 @@ class Room:
             sHand = hand.split(" ")
             for i in range(len(redraw)):
                 self.discard.append(sHand[int(redraw[i])-1])
-                drawnCard = self.deck[random.randint(0, len(self.deck)-1)]
+                drawnCard = self.deck[randint(0, len(self.deck)-1)]
                 self.deck.remove(drawnCard)
                 sHand[int(redraw[i])-1] = drawnCard
             hand = " ".join(sHand)
@@ -352,8 +353,8 @@ class PokerServerClientProtocol(asyncio.Protocol):
         self.transport = transport
         self.addr = transport.get_extra_info('peername')
         q.put(f"{self.addr}: --- 200: CONNECTED")
-        tempSalt = secrets.token_hex(16)
-        tempCookie = hashlib.sha256(tempSalt.encode()).hexdigest()
+        tempSalt = token_hex(16)
+        tempCookie = sha256(tempSalt.encode()).hexdigest()
         self.temp[tempCookie] = self.transport
         self.transport.write(messageWrapper(301,f"{tempCookie}"))
         self.transport.write(messageWrapper(201,"Welcome to the table!\nIf you're ready type \"R\", to exit at any time - \"E\""))
@@ -707,12 +708,12 @@ def clientResp(client, addr, redirected=False):
                             lineEnd = fullSalt[lineStart:].find("\n")
                             lineS = fullSalt[lineStart:lineStart+lineEnd]
 
-                            if splitCr[1] == hashlib.sha256((password+lineS.split(";")[1]).encode()).hexdigest():
+                            if splitCr[1] == sha256((password+lineS.split(";")[1]).encode()).hexdigest():
                                 isOk = True
                                 credit = int(splitCr[2])
 
-                                cookieSalt = secrets.token_hex(16)
-                                cookie = hashlib.sha256((login+cookieSalt).encode()).hexdigest()
+                                cookieSalt = token_hex(16)
+                                cookie = sha256((login+cookieSalt).encode()).hexdigest()
                                 loggedPlayers[cookie] = (login, credit)
 
                             else:
@@ -751,8 +752,8 @@ def clientResp(client, addr, redirected=False):
                             client.sendall(messageWrapper(202,"Verify password:")) 
                             verPassword, _ = msgUnwrapper(serverReceive(client))
                             if password == verPassword:
-                                salt = secrets.token_hex(8)
-                                pHash = hashlib.sha256((password+salt).encode()).hexdigest()
+                                salt = token_hex(8)
+                                pHash = sha256((password+salt).encode()).hexdigest()
                                 with lock:
                                     with open("credentials.txt", "a") as f:
                                         f.write(f"{login};{pHash};500\n")
@@ -764,8 +765,8 @@ def clientResp(client, addr, redirected=False):
                                 isOk = True
                                 credit = 500
 
-                                cookieSalt = secrets.token_hex(16)
-                                cookie = hashlib.sha256((login+cookieSalt).encode()).hexdigest()
+                                cookieSalt = token_hex(16)
+                                cookie = sha256((login+cookieSalt).encode()).hexdigest()
                                 loggedPlayers[cookie] = (login, credit)
 
                             else:
@@ -795,7 +796,7 @@ def clientResp(client, addr, redirected=False):
                         q.put(f"{addr}: {login} 403: TOO MANY ROOMS")
                         client.sendall(messageWrapper(403,f"There are still empty seats in existing rooms, please join one of them"))
                         continue
-                    rPort = random.randint(30000, 50000)
+                    rPort = randint(30000, 50000)
                     if SERVER_HOST=="": r = Room("localhost", rPort)
                     else: r = Room(SERVER_HOST, rPort)
                     roomArr.append(r)
@@ -852,7 +853,7 @@ def logger():
     while True:
         with open("ServerLogs.txt","ab") as f:
             data=q.get()
-            f.write(f"{datetime.datetime.now()} {data} \n".encode())
+            f.write(f"{datetime.now()} {data} \n".encode())
 
 
 def main():
