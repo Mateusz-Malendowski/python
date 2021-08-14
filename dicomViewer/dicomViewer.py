@@ -9,32 +9,27 @@ import matplotlib.pyplot as plt
 import os,sys
 import numpy as np
 
-#do usuniecia niepotrzebnych przyciskow z toolbaru
 backend_bases.NavigationToolbar2.toolitems = (
         ('Home', 'Reset original view', 'home', 'home'),
         ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
         ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom')
       )
 
-#uproszczone zapisywanie motywow
-#sprawdz czy jest plik configowy
 try:
     f = open("data.dicomViewer","r")
     f.close()
-except FileNotFoundError:   #jak nie to go stworz
+except FileNotFoundError:
     f = open("data.dicomViewer","w")
     f.write("SystemDefault")
     f.close()
     
 f = open("data.dicomViewer", "r")
-#----------------------------------------------
 
-themes = sg.ListOfLookAndFeelValues() #lista motywow
-selected_theme = f.read() #wczytanie z pliku nazwy motywu
+themes = sg.ListOfLookAndFeelValues() 
+selected_theme = f.read()
 current_them = sg.LOOK_AND_FEEL_TABLE[selected_theme]
-sg.ChangeLookAndFeel(selected_theme) #zmiana motywu
+sg.ChangeLookAndFeel(selected_theme)
 
-#do osadzania matplotliba w canvas
 def draw_figure(canvas, figure):
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
@@ -47,7 +42,6 @@ class Toolbar(NavigationToolbar2Tk):
     def __init__(self, *args, **kwargs):
         super(Toolbar, self).__init__(*args, **kwargs)
 
-#wczytywanie danych, lepiej dac wszystko w try/except bo jak ktoregokolwiek bedzie brakowac to sie nie wyspie
 def person_data(ds,window):
     try:
         window["-NAME-"].Update(value=ds[(0x0010, 0x0010)].value)
@@ -106,38 +100,36 @@ def person_data(ds,window):
     except KeyError:
         window["-PATCOMMS-"].Update(value="")
 
-#wczytywanie folderu
 def readFile(window,image_path,photoarray,flag):
         try:
-            if flag == 0:   #wczytywanie z przycisku
-                val = values["-IN-"]  #pobierz wartosci z przycisku wczytujacego zdjecia
-            else:           #wczytywanie z menu
+            if flag == 0:
+                val = values["-IN-"]
+            else:
                 val = flag
-            if len(val) > 2:    #zabezpieczenie bo cos sie wysypywalo wczesniej czasami
-                image_path = val+"/"   #dodaj na koniec sciezki slash
-                photoarray.clear()      #wyczysc photoarray
-                for s in os.listdir(image_path):    #dodaj wszystkie pliki z wybranej lokalizacji
+            if len(val) > 2:
+                image_path = val+"/"
+                photoarray.clear()
+                for s in os.listdir(image_path):
                     try:
                         dicom.dcmread(image_path+s)
                         photoarray.append(s)
                     except dicom.errors.InvalidDicomError:
                         None
-                slider=window["-SLIDER-"]           #ustaw wartosci dla slidera od zdjec na 0 do ilosc zdjec - 1
+                slider=window["-SLIDER-"]
                 slider.Update(range=(0, len(photoarray)-1),value=0)
-                ds = dicom.dcmread(image_path+photoarray[0])    #wczytaj pierwsze zdjecie
-                ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1)) #pokaz to zdjecie
+                ds = dicom.dcmread(image_path+photoarray[0])
+                ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1))
                 fig_agg.draw()
                 person_data(ds,window)
                 window["-EDIT-"].Update(disabled=False,button_color=("white","firebrick3"))
                 window["-NEXT-"].Update(disabled=False,button_color=("white","royalblue4"))
                 window["-PREV-"].Update(disabled=False,button_color=("white","royalblue4"))
                 lockFields()
-        except FileNotFoundError:   #jezeli sciezka niepoprawna
-            image_path = ""         #wyczysc image_path i photoarray
+        except FileNotFoundError:
+            image_path = ""
             photoarray.clear()
         return image_path,photoarray,True
     
-#wczytywanie pojedynczego pliku
 def readSinglePhoto(window,image_path,photoarray, flag):
     try:
         if flag == 0:
@@ -150,7 +142,7 @@ def readSinglePhoto(window,image_path,photoarray, flag):
             window["-SLIDER-"].Update(range=(0,0),value=0)
             try:
                 ds = dicom.dcmread(image_path)
-                ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1)) #pokaz to zdjecie
+                ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1))
                 fig_agg.draw()
                 person_data(ds,window)
                 window["-EDIT-"].Update(disabled=False,button_color=("white","firebrick3"))
@@ -166,7 +158,6 @@ def readSinglePhoto(window,image_path,photoarray, flag):
         image_path = ""
     return image_path,photoarray,True
 
-#odblokowanie edytowalnych pol
 def edit(editFl):
     window["-EDIT-"].Update(text="Save", button_color=("white","green"))
     window["-MEDICAL-"].Update(disabled=False)
@@ -175,11 +166,10 @@ def edit(editFl):
     window["-PATCOMMS-"].Update(disabled=False)
     return False
 
-#zablokowanie edytowalnych pol i zapis do pliku
 def save(ds):
-    try:    #jezeli juz istnieje takie pole w pliku to do niego zapisz
+    try:
         ds[(0x0010, 0x2000)].value=str(values["-MEDICAL-"])
-    except KeyError:    #jezeli nie istnieje to utwórz
+    except KeyError:
         ds.add_new([0x0010, 0x2000], 'LO', str(values["-MEDICAL-"]))
     try:
         ds[(0x0010, 0x2110)].value=str(values["-ALLERGIES-"])
@@ -197,7 +187,6 @@ def save(ds):
     ds.save_as(image_path+photoarray[int(values['-SLIDER-'])])
     return True
 
-#blokowanie pol
 def lockFields():
     window["-EDIT-"].Update(text="Edit Fields", button_color=("white","firebrick3"))
     window["-MEDICAL-"].Update(disabled=True)
@@ -205,14 +194,11 @@ def lockFields():
     window["-ADDHIST-"].Update(disabled=True)
     window["-PATCOMMS-"].Update(disabled=True)
 
-#czcionka zeby bylo wszystko rowno
 sg.SetOptions(font="Consolas")
 
-# ------ Menu Definition ------ #
 menu_def = [['File', ['Open File          Ctrl+O', 'Open Folder        Ctrl+D', '---', 'Preferences', ['Select theme        Ctrl+T'], 'Exit']],
             ['Help', ['Check for Updates...', '---', 'About']] ]
 
-#prawa kolumna
 col = [[sg.Text('Name      '), sg.Input(key="-NAME-",disabled=True)],
         [sg.Text('ID        '), sg.Input(key="-ID-",disabled=True, size=(25,1))],
         [sg.Text('Birth Date'), sg.Input(key="-BIRTHD-",disabled=True, size=(20,1))],
@@ -232,9 +218,7 @@ col = [[sg.Text('Name      '), sg.Input(key="-NAME-",disabled=True)],
         [sg.Text('Additional History'), sg.Multiline(key="-ADDHIST-", disabled=True)],
         [sg.Text('Patient Comments  '), sg.Multiline(key="-PATCOMMS-", disabled=True)]
         ]
-#zeby przycisk nie kierowal danych do inputu to jest w oddzielnej kolumnie
 buttonColFix=[[sg.FileBrowse(button_text="File",key="-IN2-", enable_events=True,button_color=("white","royalblue4"))]]
-#layout pysimplegui
 layout = [[sg.Menu(menu_def, tearoff=False, font=("Consolas", 11))],
           [
            sg.Text("Choose a file: "),
@@ -255,40 +239,30 @@ layout = [[sg.Menu(menu_def, tearoff=False, font=("Consolas", 11))],
            ]
           ]
     
-#sciezka do pliku
 image_path = None
-#tu beda trzymane zdjecia
 photoarray = []
-#okno
 window = sg.Window('DicomViewer', layout, finalize=True, return_keyboard_events=True)
 canvas_elem = window['-CANVAS-']
-#tu bedzie osadzone zdjecie
 canvas = canvas_elem.TKCanvas
-#matplotlibowe miejsce na wykres
 fig = Figure()
 ax = fig.add_subplot(111)
 ax.xaxis.set_visible(False)
 ax.yaxis.set_visible(False)
-#minimalna jasnosc
 brightMin=0
-#maksymalna jasnosc (jest ujemna zeby przewijajac w prawo bylo jasniej)
 brightMax=-2000
-#flaga pamietajaca czy teraz bedzie zapis czy edytowanie
 editFl=True
 
 fig_agg = draw_figure(canvas, fig)
 
 window['-CANVAS-'].bind('<Enter>', '+MOUSE OVER+')
 window['-CANVAS-'].bind('<Leave>', '+MOUSE AWAY+')
-check = "" #zmienna przechowuje stan najechania na zdjecie
+check = ""
 theme = ""
 
-#glowna petla
 while True: 
-    event, values = window.read()   #czytaj czy sa jakies zmiany
+    event, values = window.read()
     if event is None:
         break
-#menu---------------------------------------------------------
     elif event in ('Exit', 'e:69'):
         window.close()
 
@@ -317,7 +291,7 @@ while True:
                 colorWindow.close()
 
             elif e == "Restart":
-                os.execl(sys.executable, sys.executable, * sys.argv) # Nothing hapens
+                os.execl(sys.executable, sys.executable, * sys.argv)
 
             elif e == 'select_theme':
 
@@ -344,23 +318,23 @@ while True:
     elif event == "-CANVAS-+MOUSE AWAY+":
         check = "-CANVAS-+MOUSE AWAY+"
         
-    elif event == "-IN-":  #Otwieranie folderu
+    elif event == "-IN-":
         image_path, photoarray, editFl= readFile(window,image_path,photoarray,0)
         
-    elif event == "-IN2-":  #Otwieranie pliku
+    elif event == "-IN2-":
         image_path, photoarray, editFl= readSinglePhoto(window,image_path,photoarray,0)
         
-    elif event == "-SLIDER-":   #jezeli slider do zmiany zdjec
-        ax.cla()    #wyczysc zdjecie
-        if(image_path!="" and image_path!=None):    #jezeli sciezka nie jest pusta
-            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])])  #wczytaj zdjecie
-            ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1)) #i wyswietl je
-            fig_agg.draw()  #i narysuj
+    elif event == "-SLIDER-":
+        ax.cla()
+        if(image_path!="" and image_path!=None):   
+            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])]) 
+            ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1))
+            fig_agg.draw()
             person_data(ds,window)
             editFl=True
             lockFields()
             
-    elif event == "-NEXT-":   #przycisk nastepny, dosc podobny kod do slidera
+    elif event == "-NEXT-": 
         ax.cla()
         if(image_path!="" and image_path!=None and len(photoarray)>1):
             nextNr = int(values['-SLIDER-'])+1
@@ -373,7 +347,7 @@ while True:
             editFl=True
             lockFields()
             
-    elif event == "-PREV-":   #przycisk poprzedni
+    elif event == "-PREV-":
         ax.cla()
         if(image_path!="" and image_path!=None and len(photoarray)>1):
             nextNr = int(values['-SLIDER-'])-1
@@ -388,38 +362,38 @@ while True:
             editFl=True
             lockFields()
             
-    elif event == "-SLIDER2-":  #jezeli slider do kontrastu
-        ax.cla()    #wyczysc zdjecie
-        brightMin=int(values["-SLIDER2-"])  #wczytaj wartosc ze slidera
+    elif event == "-SLIDER2-":
+        ax.cla()
+        brightMin=int(values["-SLIDER2-"])  
         if(image_path!="" and image_path!=None):
-            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])])  #wczytaj zdjecie
-            slider2=window["-SLIDER2-"] #zmien maksymalne i minimalne wartosci dla sliderow, bo brightMin nie moze byc wieksze od brightMax
+            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])]) 
+            slider2=window["-SLIDER2-"]
             slider2.Update(range=(0,brightMax*(-1)-1))
             slider3=window["-SLIDER3-"]
             slider3.Update(range=(-3000, brightMin*(-1)-1))
-            ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1)) #wyswietl zdjecie z nowym kontrastem
+            ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1))
             fig_agg.draw()
             
-    elif event == "-SLIDER3-":  #jezeli slider do jasnosci
-        ax.cla()    #wyczysc zdjecie
-        brightMax=int(values["-SLIDER3-"])  #wczytaj wartosc ze slidera
+    elif event == "-SLIDER3-":
+        ax.cla()
+        brightMax=int(values["-SLIDER3-"])
         if(image_path!="" and image_path!=None):
-            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])])  #wczytaj zdjecie
-            slider2=window["-SLIDER2-"] #zmien wartosci brightMin i brightMax, i zakresy sliderow
+            ds = dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])])
+            slider2=window["-SLIDER2-"] 
             slider2.Update(range=(0,brightMax*(-1)-1))
             slider3=window["-SLIDER3-"]
             slider3.Update(range=(-3000,brightMin*(-1)-1))
             ax.imshow(ds.pixel_array, cmap=plt.cm.gray,vmin=brightMin, vmax=brightMax*(-1))
             fig_agg.draw()
             
-    elif event == "-EDIT-":    #przycisk edycji
-        if editFl:             #zaleznie od flagi editFl
+    elif event == "-EDIT-": 
+        if editFl:
             editFl=edit(editFl)
         else:
-            ds=dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])]) #zeby podac dataarray do funkcji, bez tego nie dziala w jednym przypadku
+            ds=dicom.dcmread(image_path+photoarray[int(values['-SLIDER-'])])
             editFl=save(ds)
 
-    elif event == "MouseWheel:Up" and check == "-CANVAS-+MOUSE OVER+":  #sprawdza czy scroll up i czy najechano na zdjecie
+    elif event == "MouseWheel:Up" and check == "-CANVAS-+MOUSE OVER+":
         ax.cla()
         if(image_path!="" and image_path!=None and len(photoarray)>1):
             nextNr = int(values['-SLIDER-'])+1
@@ -433,7 +407,7 @@ while True:
             lockFields()
 
     
-    elif event == "MouseWheel:Down" and check == "-CANVAS-+MOUSE OVER+":  #sprawdza czy scroll down i czy najechano na zdjecie
+    elif event == "MouseWheel:Down" and check == "-CANVAS-+MOUSE OVER+":
         ax.cla()
         if(image_path!="" and image_path!=None and len(photoarray)>1):
             nextNr = int(values['-SLIDER-'])-1
