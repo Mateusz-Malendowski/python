@@ -2,10 +2,11 @@
 Client
 '''
 import socket
-import os
-import re
 import ssl
-import sys
+
+from os import system
+from re import search, sub
+from sys import argv
 from getpass import getpass
 
 PROTOCOL_NAME = "PokerProtocol"
@@ -42,20 +43,20 @@ def msgUnwrapper(msg):
 
     elif lines[1][:3] == "300":
         response="REDIRECT"
-        srch=re.search("ADDRESS=(.*), PORT=(.*)",lines[2])
+        srch=search("ADDRESS=(.*), PORT=(.*)",lines[2])
         addr=srch.group(1)
         port=int(srch.group(2))
-        cookie=re.search("COOKIE=(.*)",lines[3]).group(1)
+        cookie=search("COOKIE=(.*)",lines[3]).group(1)
         return (addr,port,cookie), response
 
     elif lines[1][:3] == "301":
         response="VERIFICATION"
-        cookie=re.search("VERIFICATION=(.*)",lines[2]).group(1)
+        cookie=search("VERIFICATION=(.*)",lines[2]).group(1)
         return cookie, response
 
     elif lines[1][:3] == "302":
         response="SHORT REDIRECT"
-        srch=re.search("ADDRESS=(.*), PORT=(.*)",lines[2])
+        srch=search("ADDRESS=(.*), PORT=(.*)",lines[2])
         addr=srch.group(1)
         port=int(srch.group(2))
         return (addr,port), response
@@ -109,14 +110,14 @@ def msgColorifier(msg):
     if type(msg) != type(""):
         return msg
     if "♥" in msg or "♦" in msg:
-        msg=re.sub(r"♥", rf'{COLOR["RED"]}♥{COLOR["CLEAR"]}',msg)
-        msg=re.sub(r"♦", rf'{COLOR["LRED"]}♦{COLOR["CLEAR"]}',msg)
+        msg=sub(r"♥", rf'{COLOR["RED"]}♥{COLOR["CLEAR"]}',msg)
+        msg=sub(r"♦", rf'{COLOR["LRED"]}♦{COLOR["CLEAR"]}',msg)
     if "♠" in msg or "♣" in msg:
-        msg=re.sub(r"♠", rf'{COLOR["GRAY"]}♠{COLOR["CLEAR"]}',msg)
-        msg=re.sub(r"♣", rf'{COLOR["LGRAY"]}♣{COLOR["CLEAR"]}',msg)
+        msg=sub(r"♠", rf'{COLOR["GRAY"]}♠{COLOR["CLEAR"]}',msg)
+        msg=sub(r"♣", rf'{COLOR["LGRAY"]}♣{COLOR["CLEAR"]}',msg)
     if "coins" in msg.lower():
-        msg=re.sub(r"[cC]oins: \d*", rf'{COLOR["YELLOW"]}\g<0>{COLOR["CLEAR"]}', msg)
-        msg=re.sub(r"[0-9]+ coins", rf'{COLOR["YELLOW"]}\g<0>{COLOR["CLEAR"]}', msg)
+        msg=sub(r"[cC]oins: \d*", rf'{COLOR["YELLOW"]}\g<0>{COLOR["CLEAR"]}', msg)
+        msg=sub(r"[0-9]+ coins", rf'{COLOR["YELLOW"]}\g<0>{COLOR["CLEAR"]}', msg)
     return msg
 
 def clearAndPrev():
@@ -126,21 +127,21 @@ def clearAndPrev():
 
 def main():
     global IP_VERSION, SERVER_HOST, SERVER_PORT, CERT_AUTH, SERVER_CERT
-    if "-v6" in sys.argv:
+    if "-v6" in argv:
         IP_VERSION=socket.AF_INET6
-    if "-h" in sys.argv:
-        SERVER_HOST=sys.argv[sys.argv.index("-h") + 1]
-    if "-p" in sys.argv:
-        SERVER_PORT=int(sys.argv[sys.argv.index("-p") + 1])
-    if "-ca" in sys.argv:
-        CERT_AUTH=sys.argv[sys.argv.index("-ca") + 1]
-    if "-crt" in sys.argv:
-        SERVER_CERT=sys.argv[sys.argv.index("-crt") + 1]
+    if "-h" in argv:
+        SERVER_HOST=argv[argv.index("-h") + 1]
+    if "-p" in argv:
+        SERVER_PORT=int(argv[argv.index("-p") + 1])
+    if "-ca" in argv:
+        CERT_AUTH=argv[argv.index("-ca") + 1]
+    if "-crt" in argv:
+        SERVER_CERT=argv[argv.index("-crt") + 1]
 
     s = socket.socket(IP_VERSION, socket.SOCK_STREAM)
     ssl_s = ssl.wrap_socket(s, cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2, ca_certs=CERT_AUTH)
 
-    os.system("color")
+    system("color")
 
     try:
         ssl_s.connect((SERVER_HOST, SERVER_PORT))
