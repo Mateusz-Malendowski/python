@@ -10,8 +10,8 @@ import datetime
 import asyncio
 import ssl
 import secrets
-import re
-import sys
+from re import search, fullmatch, sub
+from sys import argv
 from concurrent.futures import ThreadPoolExecutor
 
 PROTOCOL_NAME="PokerProtocol"
@@ -861,14 +861,14 @@ def main():
     with open("credentials.txt", "a") as f: pass
     with open("salts.txt", "a") as f: pass
 
-    if "-h" in sys.argv:
-        SERVER_HOST=sys.argv[sys.argv.index("-h") + 1]
-    if "-p" in sys.argv:
-        SERVER_PORT=int(sys.argv[sys.argv.index("-p") + 1])
-    if "-crt" in sys.argv:
-        SERVER_CERT=sys.argv[sys.argv.index("-crt") + 1]
-    if "-key" in sys.argv:
-        SERVER_KEY=sys.argv[sys.argv.index("-key") + 1]
+    if "-h" in argv:
+        SERVER_HOST=argv[argv.index("-h") + 1]
+    if "-p" in argv:
+        SERVER_PORT=int(argv[argv.index("-p") + 1])
+    if "-crt" in argv:
+        SERVER_CERT=argv[argv.index("-crt") + 1]
+    if "-key" in argv:
+        SERVER_KEY=argv[argv.index("-key") + 1]
 
     q = queue.Queue()
     s = socket.create_server((SERVER_HOST, SERVER_PORT), family=socket.AF_INET6, dualstack_ipv6=True)
