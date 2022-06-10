@@ -6,10 +6,10 @@ Four clients connecting to the server:
 While server keeps logs of everything that is happening
 ![serverLogs](https://user-images.githubusercontent.com/81644484/173107797-baf3fe9b-dfe2-4435-940d-2bcd5b117de7.PNG)
 
-To run this code there are required three additional files:
-- server certificate
-- private key of that certificate
-- certificate of Certification Authority which issued that certificate
+To run this code there are required three additional files, example ones are:
+- server.crt  -   server certificate
+- server.pem  -   private key of that certificate
+- ca.crt      -   certificate of CA which issued server certificate
 
 Basic usage:
 - python server.py    -   starts server with default parameters
