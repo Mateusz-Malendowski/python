@@ -1,4 +1,11 @@
-Console server and client applications for playing poker using socket and asyncio libraries.
+Event-based server and client applications for playing poker using socket and asyncio libraries.
+
+Four clients connecting to the server:
+![4playersExample](https://user-images.githubusercontent.com/81644484/173106807-de9ee5dc-fbac-4c9f-a864-3ccc58ef7f8b.png)
+
+While server keeps logs of everything that is happening
+![serverLogs](https://user-images.githubusercontent.com/81644484/173107797-baf3fe9b-dfe2-4435-940d-2bcd5b117de7.PNG)
+
 To run this code there are required three additional files:
 - server certificate
 - private key of that certificate
