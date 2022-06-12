@@ -5,7 +5,7 @@ chaoticEncryption.py is implementation of said algorithm, while attack.py is my 
 
 Both programs transform data on **pixel** basis.
 
-chaoticEncryption.py usage:
+chaoticEncryption.py usage:  
 python .\chaoticEncryption.py fileWithoutExtension, mode, mi0, x0, mi1, y0  
 Modes:  
 E - encryption  
